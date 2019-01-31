@@ -1,2 +1,5 @@
 # Group-6
-Group space for Oishy Rahman &amp; Nusrat Zaman Chowdhury (Group 6)
+
+1510075042	Oishy Rahman	<oishy.rahman@northsouth.edu>
+
+1520890642	Nusrat Zaman Chowdhury	<nusrat.zaman@northsouth.edu>
