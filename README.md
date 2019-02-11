@@ -4,5 +4,5 @@
 
 1330350642	A. K. Rafiul Alam Chowdhury	<rafiul.chowdhury@northsouth.edu>
 
-1520890642	Nusrat Zaman Chowdhury	<nusrat.zaman@northsouth.edu>
+1611577042	Md. Ekramul Haque	<ekramul.haque02@northsouth.edu>
 
