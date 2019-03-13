@@ -1,0 +1,23 @@
+ <!DOCTYPE html>
+<html>
+<head>
+	<title>Old Book</title>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+<body>
+	<header>
+		<div class="main">
+			<div class="logo">
+				<img src="logo.png"> 
+				</div>
+			<ul>
+				<li class="active"><a href="#">Home</a></li>
+				<li><a href="#">Book List</a></li>
+				<li><a href="#">Buy Now</a></li>
+				<li><a href="#">My Account</a></li>
+				<li><a href="#">Custome care</a></li>	
+			</ul>	 
+		</div>
+	</header>
+</body>
+</html>
