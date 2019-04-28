@@ -1,295 +1,726 @@
 <?php
-session_start();
-require_once('connect.php');
-if(isset($_POST) & !empty($_POST))
-{
-  $username=mysqli_real_escape_string($connection, $_POST['username']);
-  $password=md5($_POST['password']);
+	// Initialize the session
+	session_start();
 
-  $sql="SELECT * FROM userinfo WHERE username='$username' AND password='$password'";
-  $result=mysqli_query($connection, $sql);
-  $count=mysqli_num_rows($result);
+	// Check if the user is already logged in, if yes then redirect him to home page
+	if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
+	    header("location: index.php");
+	    exit;
+	}
 
-  if($count==1)
-  {
-    $_SESSION['username'] = $username;
-    header("Location: account-info.php");
-  }
-  else
-  {
-    $fmsg = "Invalid username/password";
-  }
+	// Include config file
+	require_once "./config.php";
 
-}
-  if(isset($_SESSION['username']))
-  {
-    $smsg = "User already logged in";
-  }
+	// Define variables and initialize with empty values
+	$email = $password = "";
+	$email_err = $password_err = "";
+
+	// Processing form data when form is submitted
+	if($_SERVER["REQUEST_METHOD"] == "POST"){
+
+	    // Check if email is empty
+	    if(empty(trim($_POST["email"]))){
+	        $email_err = "Please enter a email.";
+	    } else{
+	        $email = trim($_POST["email"]);
+	    }
+
+	    // Check if password is empty
+	    if(empty(trim($_POST["password"]))){
+	        $password_err = "Please enter your password.";
+	    } else{
+	        $password = trim($_POST["password"]);
+	    }
+
+	    // Validate credentials
+	    if(empty($username_err) && empty($password_err)){
+	        // Prepare a select statement
+	        $sql = "SELECT id, name, email, password FROM users WHERE email = ?";
+
+	        if($stmt = mysqli_prepare($db, $sql)){
+	            // Bind variables to the prepared statement as parameters
+	            mysqli_stmt_bind_param($stmt, "s", $param_email);
+
+	            // Set parameters
+	            $param_email = $email;
+
+	            // Attempt to execute the prepared statement
+	            if(mysqli_stmt_execute($stmt)){
+	                // Store result
+	                mysqli_stmt_store_result($stmt);
+
+	                // Check if username exists, if yes then verify password
+	                if(mysqli_stmt_num_rows($stmt) == 1){
+	                    // Bind result variables
+	                    mysqli_stmt_bind_result($stmt, $id, $name, $email, $hashed_password);
+
+	                    if(mysqli_stmt_fetch($stmt)){
+	                        if(password_verify($password, $hashed_password)){
+	                            // Password is correct, so start a new session
+	                            session_start();
+
+	                            // Store data in session variables
+	                            $_SESSION["loggedin"] = true;
+	                            $_SESSION["id"] = $id;
+	                            $_SESSION["name"] = $name;
+	                            $_SESSION["email"] = $email;
+
+	                            // Redirect user to welcome page
+	                            header("location: index.php");
+	                        } else{
+	                            // Display an error message if password is not valid
+	                            $password_err = "The password you entered was not valid.";
+	                        }
+	                    }
+	                } else{
+	                    // Display an error message if username doesn't exist
+	                    $email_err = "No account found with that email.";
+	                }
+	            } else{
+	                echo "Oops! Something went wrong. Please try again later.";
+	            }
+	        }
+
+	        // Close statement
+	        mysqli_stmt_close($stmt);
+	    }
+
+	    // Close connection
+	    mysqli_close($db);
+	}
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <!-- SITE TITTLE -->
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bookseeking - Login</title>
-  
-  <!-- PLUGINS CSS STYLE -->
-  <link href="plugins/jquery-ui/jquery-ui.min.css" rel="stylesheet">
-  <!-- Bootstrap -->
-  <link href="plugins/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
-  <link href="plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet">
-  <!-- Owl Carousel -->
-  <link href="plugins/slick-carousel/slick/slick.css" rel="stylesheet">
-  <link href="plugins/slick-carousel/slick/slick-theme.css" rel="stylesheet">
-  <!-- Fancy Box -->
-  <link href="plugins/fancybox/jquery.fancybox.pack.css" rel="stylesheet">
-  <link href="plugins/jquery-nice-select/css/nice-select.css" rel="stylesheet">
-  <link href="plugins/seiyria-bootstrap-slider/dist/css/bootstrap-slider.min.css" rel="stylesheet">
-  <!-- CUSTOM CSS -->
-  <link href="css/style.css" rel="stylesheet">
-
-  <!-- FAVICON -->
-  <link href="img/favicon.png" rel="shortcut icon">
-
-  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-  <!--[if lt IE 9]>
-  <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-  <![endif]-->
-
+	<title>Home</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--===============================================================================================-->
+	<link rel="icon" type="image/png" href="images/icons/favicon.png"/>
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="fonts/themify/themify-icons.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="fonts/Linearicons-Free-v1.0.0/icon-font.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="fonts/elegant-font/html-css/style.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/animate/animate.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/css-hamburgers/hamburgers.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/animsition/css/animsition.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/select2/select2.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/daterangepicker/daterangepicker.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/slick/slick.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="vendor/lightbox2/css/lightbox.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="css/util.css">
+	<link rel="stylesheet" type="text/css" href="css/main.css">
+<!--===============================================================================================-->
 </head>
+<body style="background-color: #999999;" class="animsition">
 
-<body class="body-wrapper">
+	<!-- Header -->
+	<header class="header1">
+		<!-- Header desktop -->
+		<div class="container-menu-header">
+			<div class="topbar">
+				<div class="topbar-social">
+					<a href="#" class="topbar-social-item fa fa-facebook"></a>
+					<a href="#" class="topbar-social-item fa fa-instagram"></a>
+					<a href="#" class="topbar-social-item fa fa-pinterest-p"></a>
+					<a href="#" class="topbar-social-item fa fa-snapchat-ghost"></a>
+					<a href="#" class="topbar-social-item fa fa-youtube-play"></a>
+				</div>
 
-<!-- Header Area Starts -->
-<section>
-  <div class="container" style="height: 160px; margin-top: -100px; margin-bottom:90px;" >
-    <div class="row">
-      <div class="col-md-12">
-        <nav class="navbar navbar-expand-lg  navigation">
-          <a class="navbar-brand" href="index.html">
-            <img style="height:280px; width:280px;" src="images/logo.png" alt="">
-          </a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav ml-auto main-nav ">
-              <li class="nav-item active">
-                <a class="nav-link" href="index.html">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="all-posts.html">All Books</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="account-info.php">Dashboard</a>
-              </li>
-              <li class="nav-item dropdown dropdown-slide">
-                <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Categories <span><i class="fa fa-angle-down"></i></span>
-                </a>
-                <!-- Dropdown list -->
-                <div class="dropdown-menu dropdown-menu-right">
-                  <a class="dropdown-item" href="category.html">Engineering</a>
-                  <a class="dropdown-item" href="single.html">Business</a>
-                  <a class="dropdown-item" href="store-single.html">English</a>
-                  <a class="dropdown-item" href="dashboard.html">Comics</a>
-                  <a class="dropdown-item" href="user-profile.html">Novels</a>
-                  <a class="dropdown-item" href="submit-coupon.html">Poems</a>
-                  <a class="dropdown-item" href="blog.html">Travel</a>
-                  <a class="dropdown-item" href="single-blog.html">Religious</a>
-                </div>
-              </li>
-              <li class="nav-item dropdown dropdown-slide">
-                <a class="nav-link dropdown-toggle" href="" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Deals <span><i class="fa fa-angle-down"></i></span>
-                </a>
-                <!-- Dropdown list -->
-                <div class="dropdown-menu dropdown-menu-right">
-                  <a class="dropdown-item" href="#">Buy</a>
-                  <a class="dropdown-item" href="#">Sell</a>
-                  <a class="dropdown-item" href="#">Borrow</a>
-                  <a class="dropdown-item" href="#">Exchange</a>
-                  <a class="dropdown-item" href="#">Lend</a>
-                </div>
-              </li>
-            </ul>
-            <ul class="navbar-nav ml-auto mt-10">
-              
-              <li class="nav-item">
-                <a class="nav-link add-button" href="login.php"><i class="fa fa-plus-circle"></i> Add Post</a>
-              </li>
-            </ul>
-          </div>
-        </nav>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- Header Area Ends -->
+				<span class="topbar-child1">
+					Free shipping for standard order over 100৳
+				</span>
+
+				<div class="topbar-child2">
+					<span class="topbar-email">
+						old_book@example.com
+					</span>
+
+					<div class="topbar-language rs1-select2">
+						<select class="selection-1" name="time">
+							<option>USD</option>
+							<option>EUR</option>
+							<option>BDT</option>
+						</select>
+					</div>
+				</div>
+			</div>
 
 
-        <!-- Content section Start --> 
-    <section id="content" style="margin-bottom: 50px;">
-      <div class="container text-center">
-        <div class="row">
-          <div class="col-md-3"></div> 
-          <div class="col-md-6" "col-md-offset-6" style="background-color:light;">
-            <div class="page-login-form box">
+			<div class="wrap_header bg-success">
+				<!-- Logo -->
+				<a href="index.html" class="logo">
+					<img src="images/icons/logo.png" alt="IMG-LOGO">
+				</a>
 
-             <!-- PHP Alert Box starts -->
-                  <?php if(isset($smsg)){ ?><div class="alert alert-success" role="alert"> <?php echo $smsg; ?> </div><?php } ?>
-      <?php if(isset($fmsg)){ ?><div class="alert alert-danger" role="alert"> <?php echo $fmsg; ?> </div><?php } ?>
-            <!-- PHP Alert Box ends -->
+				<!-- Menu -->
+				<div class="wrap_menu ">
+					<nav class="menu ">
+						<ul class="main_menu ">
+							<button >
+								<a class="btn btn-success px-2 py-2 text-white " href="index.html">Home</a>
 
-              <div class="col-md-3"></div>
-              <h3 style="margin-bottom: 20px;">
-                Login
-              </h3>
-              <form method="POST" action="login.php" role="form" class="login-form">
-                <div class="form-group">
-                  <div class="input-icon">
-                    <i class="icon fa fa-user"></i>
-                    <input type="text" style="text-align:center" id="username" class="form-control" name="username" placeholder="Username" required>
-                  </div>
-                </div> 
-                <div class="form-group">
-                  <div class="input-icon">
-                    <i class="icon fa fa-unlock-alt"></i>
-                    <input type="password" style="text-align:center" class="form-control" name="password" id="password" placeholder="Password" required>
-                  </div>
-                </div>                  
-                <div class="checkbox">
-                  <input type="checkbox" id="remember" name="rememberme" value="forever" style="float: center;">
-                  <label for="remember">Remember me</label>
-                </div>
-                <button class="btn btn-success" style="background-color:green; margin-bottom: 20px; margin-top: 20px;">Submit</button>
-              </form>
-              <ul class="form-links"">
-                <li class="pull-left"><a href="signup.php">Don't have an account?</a></li>
-                <li class="pull-right"><a href="forget-password.html">Lost your password?</a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- Content section End --> 
+							</button>
+                            <button >
+								<a class="btn btn-success px-2 py-2 text-white " href="register.php">Register</a>
+
+							</button>
+                            <button >
+								<a class="btn btn-success px-2 py-2 text-white " href="login.php">Login</a>
+
+							</button>
+                            <button >
+								<a class="btn btn-success px-2 py-2 text-white " href="about.html">About Us</a>
+
+							</button>
+							<button >
+								<a class="btn btn-success px-2 py-2 text-white " href="contact.html">Contact Us</a>
+
+							</button>
+						</ul>
+					</nav>
+				</div>
+
+				<!-- Header Icon -->
+				<div class="header-icons">
+				<div class="search-container">
+                   <form action="/action_page.php">
+                     <input type="text" placeholder="Search.." name="search">
+                     <button type="submit"><i class="fa fa-search"></i></button>
+                   </form>
+                 </div>
+
+				 <span class="linedivide1"></span>
 
 
+					<span class="linedivide1"></span>
+
+					<div class="header-wrapicon2">
+						<img  src="images/icons/icon-header-02.png" class=" rounded-circle header-icon1 js-show-header-dropdown" alt="ICON">
+						<span class="header-icons-noti">0</span>
+
+						<!-- Header cart noti -->
+						<div class="header-cart header-dropdown">
+							<ul class="header-cart-wrapitem">
+								<li class="header-cart-item">
+									<div class="header-cart-item-img">
+										<img src="images/item-cart-01.jpg" alt="IMG">
+									</div>
+
+									<div class="header-cart-item-txt">
+
+										<a href="#" class="text-danger header-cart-item-name">
+											Misir Ali Somogro
+										</a>
+
+										<span class="header-cart-item-info">
+											1 x 200৳
+										</span>
+									</div>
+								</li>
+
+								<li class="header-cart-item">
+									<div class="header-cart-item-img">
+										<img src="images/item-cart-02.jpg" alt="IMG">
+									</div>
+
+									<div class="header-cart-item-txt">
+										<a href="#" class="header-cart-item-name">
+											Himur ditiyo prohor
+										</a>
+
+										<span class="header-cart-item-info">
+											1 x 100৳
+										</span>
+									</div>
+								</li>
+
+								<li class="header-cart-item">
+									<div class="header-cart-item-img">
+										<img src="images/item-cart-03.jpg" alt="IMG">
+									</div>
+
+									<div class="header-cart-item-txt">
+										<a href="#" class="header-cart-item-name">
+											Megher Chaya
+										</a>
+
+										<span class="header-cart-item-info">
+											1 x 80৳
+										</span>
+									</div>
+								</li>
+							</ul>
+
+							<div class="header-cart-total">
+								Total: 380৳
+							</div>
+
+							<div class="header-cart-buttons">
+								<div class="header-cart-wrapbtn">
+									<!-- Button -->
+									<a href="cart.html" class="flex-c-m size1 bg1 bo-rad-20 hov1 s-text1 trans-0-4">
+										View Cart
+									</a>
+								</div>
+
+								<div class="header-cart-wrapbtn">
+									<!-- Button -->
+									<a href="#" class="flex-c-m size1 bg1 bo-rad-20 hov1 s-text1 trans-0-4">
+										Check Out
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+            <!-- Header Mobile -->
+		<div class="wrap_header_mobile">
+			<!-- Logo moblie -->
+			<a href="index.html" class="logo-mobile">
+				<img src="images/icons/logo.png" alt="IMG-LOGO">
+			</a>
+
+			<!-- Button show menu -->
+			<div class="btn-show-menu">
+				<!-- Header Icon mobile -->
+				<div class="header-icons-mobile">
+				<div class="search-container">
+                   <form action="/action_page.php">
+                     <input type="text" placeholder="Search.." name="search">
+                     <button type="submit"><i class="fa fa-search"></i></button>
+                   </form>
+                 </div> <span class="linedivide2"></span>
 
 
-<!--============================
-=            Footer            =
-=============================-->
+					<span class="linedivide2"></span>
 
-<footer class="footer section section-sm">
-  <!-- Container Start -->
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-3 col-md-7 offset-md-1 offset-lg-0">
-        <!-- About -->
-        <div class="block about">
-          <!-- footer logo -->
-          <img src="images/logo.png" alt="" style="width: 200px; height:80px;">
-          <!-- description -->
-          <p class="alt-color">Bookseeking is an online platform where users can exchange books with other users and also borrow, lend, buy and sell books online. </p>
-        </div>
-      </div>
-      <!-- Link list -->
-      <div class="col-lg-2 offset-lg-1 col-md-3">
-        <div class="block"  style="margin-top:40px">
-          
-          <ul>
-            <li><a href="#">About us</a></li>
-            <li><a href="#">Contact us</a></li>
-            <li><a href="#">Deals & Coupons</a></li>
-            <li><a href="#">Articls & Tips</a></li>
-            <li><a href="#">Terms of Services</a></li>
-          </ul>
-        </div>
-      </div>
-      <!-- Link list -->
-      <div class="col-lg-2 col-md-3 offset-md-1 offset-lg-0">
-        <div class="block" style="margin-top:40px">
-          
-          <ul>
-            <li><a href="#">Browse categories</a></li>
-            <li><a href="#">FAQ</a></li>
-            <li><a href="#">Advertise</a></li>
-            <li><a href="#">Sitemap</a></li>
-            <li><a href="#">Donate</a></li>
-          </ul>
-        </div>
-      </div>
-      <!-- Promotion -->
-      <div class="col-lg-4 col-md-7" style="margin-top:42px;">
-        <!-- App promotion -->
-        <div class="block-2 app-promotion">
-          <a href="">
-            <!-- Icon -->
-            <img src="images/footer/phone-icon.png" alt="mobile-icon" >
-          </a>
-          <p>Get the BookSeeking Mobile App </p>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Container End -->
-</footer>
-<!-- Footer Bottom -->
-<footer class="footer-bottom">
-    <!-- Container Start -->
-    <div class="container">
-      <div class="row">
-        <div class="col-sm-6 col-12">
-          <!-- Copyright -->
-          <div class="copyright">
-            <p>Copyright © 2017. All Rights Reserved</p>
-          </div>
-        </div>
-        <div class="col-sm-6 col-12">
-          <!-- Social Icons -->
-          <ul class="social-media-icons text-right">
-              <li><a class="fa fa-facebook" href=""></a></li>
-              <li><a class="fa fa-twitter" href=""></a></li>
-              <li><a class="fa fa-pinterest-p" href=""></a></li>
-              <li><a class="fa fa-vimeo" href=""></a></li>
-            </ul>
-        </div>
-      </div>
-    </div>
-    <!-- Container End -->
-    <!-- To Top -->
-    <div class="top-to">
-      <a id="top" class="" href=""><i class="fa fa-angle-up"></i></a>
-    </div>
-</footer>
+					<div class="header-wrapicon2">
+						<img src="images/icons/icon-header-02.png" class="header-icon1 js-show-header-dropdown" alt="ICON">
+						<span class="header-icons-noti">0</span>
 
-  <!-- JAVASCRIPTS -->
-  <script src="plugins/jquery/jquery.min.js"></script>
-  <script src="plugins/jquery-ui/jquery-ui.min.js"></script>
-  <script src="plugins/tether/js/tether.min.js"></script>
-  <script src="plugins/raty/jquery.raty-fa.js"></script>
-  <script src="plugins/bootstrap/dist/js/popper.min.js"></script>
-  <script src="plugins/bootstrap/dist/js/bootstrap.min.js"></script>
-  <script src="plugins/seiyria-bootstrap-slider/dist/bootstrap-slider.min.js"></script>
-  <script src="plugins/slick-carousel/slick/slick.min.js"></script>
-  <script src="plugins/jquery-nice-select/js/jquery.nice-select.min.js"></script>
-  <script src="plugins/fancybox/jquery.fancybox.pack.js"></script>
-  <script src="plugins/smoothscroll/SmoothScroll.min.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCC72vZw-6tGqFyRhhg5CkF2fqfILn2Tsw"></script>
-  <script src="js/scripts.js"></script>
+						<!-- Header cart noti -->
+						<div class="header-cart header-dropdown">
+							<ul class="header-cart-wrapitem">
+								<li class="header-cart-item">
+									<div class="header-cart-item-img">
+										<img src="images/item-cart-01.jpg" alt="IMG">
+									</div>
+
+									<div class="header-cart-item-txt">
+										<a href="#" class="header-cart-item-name">
+											Misir Ali Somogro
+										</a>
+
+										<span class="header-cart-item-info">
+											1 x 200৳
+										</span>
+									</div>
+								</li>
+
+								<li class="header-cart-item">
+									<div class="header-cart-item-img">
+										<img src="images/item-cart-02.jpg" alt="IMG">
+									</div>
+
+									<div class="header-cart-item-txt">
+										<a href="#" class="header-cart-item-name">
+											Himur ditiyo prohor
+										</a>
+
+										<span class="header-cart-item-info">
+											1 x 100৳
+										</span>
+									</div>
+								</li>
+
+								<li class="header-cart-item">
+									<div class="header-cart-item-img">
+										<img src="images/item-cart-03.jpg" alt="IMG">
+									</div>
+
+									<div class="header-cart-item-txt">
+										<a href="#" class="header-cart-item-name">
+											Megher Chaya
+										</a>
+
+										<span class="header-cart-item-info">
+											1 x 80৳
+										</span>
+									</div>
+								</li>
+							</ul>
+
+							<div class="header-cart-total">
+								Total: 380৳
+							</div>
+
+							<div class="header-cart-buttons">
+								<div class="header-cart-wrapbtn">
+									<!-- Button -->
+									<a href="cart.html" class="flex-c-m size1 bg1 bo-rad-20 hov1 s-text1 trans-0-4">
+										View Cart
+									</a>
+								</div>
+
+								<div class="header-cart-wrapbtn">
+									<!-- Button -->
+									<a href="#" class="flex-c-m size1 bg1 bo-rad-20 hov1 s-text1 trans-0-4">
+										Check Out
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="btn-show-menu-mobile hamburger hamburger--squeeze">
+					<span class="hamburger-box">
+						<span class="hamburger-inner"></span>
+					</span>
+				</div>
+			</div>
+		</div>
+
+
+
+		<!-- Menu Mobile -->
+		<div class="wrap-side-menu" >
+			<nav class="side-menu">
+				<ul class="main-menu">
+					<li class="item-topbar-mobile p-l-20 p-t-8 p-b-8">
+						<span class="topbar-child1">
+							Free shipping for standard order over 100 BDT
+						</span>
+					</li>
+
+					<li class="item-topbar-mobile p-l-20 p-t-8 p-b-8">
+						<div class="topbar-child2-mobile">
+							<span class="topbar-email">
+								old.books@example.com
+							</span>
+
+							<div class="topbar-language rs1-select2">
+								<select class="selection-1" name="time">
+									<option>BDT</option>
+									<option>USD</option>
+									<option>EUR</option>
+								</select>
+							</div>
+						</div>
+					</li>
+
+					<li class="item-topbar-mobile p-l-10">
+						<div class="topbar-social-mobile">
+							<a href="#" class="topbar-social-item fa fa-facebook"></a>
+							<a href="#" class="topbar-social-item fa fa-instagram"></a>
+							<a href="#" class="topbar-social-item fa fa-pinterest-p"></a>
+							<a href="#" class="topbar-social-item fa fa-snapchat-ghost"></a>
+							<a href="#" class="topbar-social-item fa fa-youtube-play"></a>
+						</div>
+					</li>
+
+					<li class="item-menu-mobile">
+						<a href="index.php">Home</a>
+
+					</li>
+					<li class="item-menu-mobile">
+						<a href="register.php">Register</a>
+					</li>
+
+					<li class="item-menu-mobile">
+						<a href="login.php">Login</a>
+					</li>
+
+
+					<li class="item-menu-mobile">
+						<a href="about.html">About Us</a>
+					</li>
+
+					<li class="item-menu-mobile">
+						<a href="contact.html">Contact Us</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</header>
+
+
+	<div class="limiter">
+		<div class="container-login100">
+			<div class="wrap-login100 p-l-50 p-r-50 p-t-77 p-b-30">
+				<form class="login100-form validate-form"  action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+					<span class="login100-form-title p-b-55">
+						Signin
+					</span>
+
+					<div class="wrap-input100 validate-input m-b-16" data-validate = "Valid email is required: ex@abc.xyz">
+						<input class="input100"  name="email" type="email" id="email" placeholder="john@example.com">
+						<span class="focus-input100"></span>
+						<span class="symbol-input100">
+							<span class="lnr lnr-envelope"></span>
+						</span>
+					</div>
+
+					<div class="wrap-input100 validate-input m-b-16" data-validate = "Password is required">
+						<input class="input100" name="password" type="password" id="password" placeholder="**************">
+						<span class="focus-input100"></span>
+						<span class="symbol-input100">
+							<span class="lnr lnr-lock"></span>
+						</span>
+					</div>
+
+					<div class="contact100-form-checkbox m-l-4">
+						<input class="input-checkbox100" id="ckb1" type="checkbox" name="remember-me">
+						<label class="label-checkbox100" for="ckb1">
+							Remember me
+						</label>
+					</div>
+
+					<div class="container-login100-form-btn p-t-25">
+						<button type="submit" class="login100-form-btn rounded-center text-white btn-lg active">
+							Signin
+						</button>
+					</div>
+
+					<div class="text-center w-full p-t-115">
+						<span class="txt1">
+							Not a member?
+						</span>
+
+						<div class="wrap-login100-form-btn">
+							<div class="login100-form-bgbtn "></div>
+							 <a href="register.php" class="btn rounded-center text-white btn-lg active" role="button">Sign Up</a>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<footer class="bg6 p-t-45 p-b-43 p-l-45 p-r-45">
+		<div class="flex-w p-b-90">
+			<div class="w-size6 p-t-30 p-l-15 p-r-15 respon3">
+				<h4 class="s-text12 p-b-30">
+					GET IN TOUCH
+				</h4>
+
+				<div>
+					<p class="s-text7 w-size27">
+						Any questions? Let us know in store at 5th floor, Jamuna Future Park, Dhaka or call us on +8801683193662
+					</p>
+
+					<div class="flex-m p-t-30">
+						<a href="#" class="fs-18 color1 p-r-20 fa fa-facebook"></a>
+						<a href="#" class="fs-18 color1 p-r-20 fa fa-instagram"></a>
+						<a href="#" class="fs-18 color1 p-r-20 fa fa-pinterest-p"></a>
+						<a href="#" class="fs-18 color1 p-r-20 fa fa-snapchat-ghost"></a>
+						<a href="#" class="fs-18 color1 p-r-20 fa fa-youtube-play"></a>
+					</div>
+				</div>
+			</div>
+
+
+
+			<div class="w-size7 p-t-30 p-l-15 p-r-15 respon4">
+				<h4 class="s-text12 p-b-30">
+					Links
+				</h4>
+
+				<ul>
+					<li class="p-b-9">
+						<a href="#" class="s-text7">
+							Search
+						</a>
+					</li>
+
+					<li class="p-b-9">
+						<a href="about.html" class="s-text7">
+							About Us
+						</a>
+					</li>
+
+					<li class="p-b-9">
+						<a href="contact.html" class="s-text7">
+							Contact Us
+						</a>
+					</li>
+
+					<li class="p-b-9">
+						<a href="#" class="s-text7">
+							Coustomer Care
+						</a>
+					</li>
+				</ul>
+			</div>
+
+			<div class="w-size7 p-t-30 p-l-15 p-r-15 respon4">
+				<h4 class="s-text12 p-b-30">
+					Help
+				</h4>
+
+				<ul>
+					<li class="p-b-9">
+						<a href="#" class="s-text7">
+							Track Order
+						</a>
+					</li>
+
+					<li class="p-b-9">
+						<a href="#" class="s-text7">
+							Returns
+						</a>
+					</li>
+
+					<li class="p-b-9">
+						<a href="#" class="s-text7">
+							Shipping
+						</a>
+					</li>
+
+					<li class="p-b-9">
+						<a href="#" class="s-text7">
+							FAQs
+						</a>
+					</li>
+				</ul>
+			</div>
+
+			<div class="w-size8 p-t-30 p-l-15 p-r-15 respon3">
+				<h4 class="s-text12 p-b-30">
+					Newsletter
+				</h4>
+
+				<form>
+					<div class="effect1 w-size9">
+						<input class="s-text7 bg6 w-full p-b-5" type="text" name="email" placeholder="email@example.com">
+						<span class="effect1-line"></span>
+					</div>
+
+					<div class="w-size2 p-t-20">
+						<!-- Button -->
+						<button class="flex-c-m size2 bg4 bo-rad-23 hov1 m-text3 trans-0-4">
+							Subscribe
+						</button>
+					</div>
+
+				</form>
+			</div>
+		</div>
+
+		<div class="t-center p-l-15 p-r-15">
+			<a href="#">
+				<img class="h-size2" src="images/icons/paypal.png" alt="IMG-PAYPAL">
+			</a>
+
+			<a href="#">
+				<img class="h-size2" src="images/icons/visa.png" alt="IMG-VISA">
+			</a>
+
+			<a href="#">
+				<img class="h-size2" src="images/icons/mastercard.png" alt="IMG-MASTERCARD">
+			</a>
+
+			<a href="#">
+				<img class="h-size2" src="images/icons/express.png" alt="IMG-EXPRESS">
+			</a>
+
+			<a href="#">
+				<img class="h-size2" src="images/icons/discover.png" alt="IMG-DISCOVER">
+			</a>
+
+			<div class="t-center s-text8 p-t-20">
+				Copyright © 2018 All rights reserved.
+			</div>
+		</div>
+	</footer>
+
+
+
+	<!-- Back to top -->
+	<div class="btn-back-to-top bg0-hov" id="myBtn">
+		<span class="symbol-btn-back-to-top">
+			<i class="fa fa-angle-double-up" aria-hidden="true"></i>
+		</span>
+	</div>
+
+	<!-- Container Selection1 -->
+	<div id="dropDownSelect1"></div>
+
+<!--===============================================================================================-->
+	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/animsition/js/animsition.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/bootstrap/js/popper.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/select2/select2.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/daterangepicker/moment.min.js"></script>
+	<script src="vendor/daterangepicker/daterangepicker.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/countdowntime/countdowntime.js"></script>
+<!--===============================================================================================-->
+	<script src="js/main.js"></script>
+	<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/animsition/js/animsition.min.js"></script>
+<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/bootstrap/js/popper.js"></script>
+	<script type="text/javascript" src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/select2/select2.min.js"></script>
+	<script type="text/javascript">
+		$(".selection-1").select2({
+			minimumResultsForSearch: 20,
+			dropdownParent: $('#dropDownSelect1')
+		});
+	</script>
+<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/slick/slick.min.js"></script>
+	<script type="text/javascript" src="js/slick-custom.js"></script>
+<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/countdowntime/countdowntime.js"></script>
+<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/lightbox2/js/lightbox.min.js"></script>
+<!--===============================================================================================-->
+	<script type="text/javascript" src="vendor/sweetalert/sweetalert.min.js"></script>
+	<script type="text/javascript">
+		$('.block2-btn-addcart').each(function(){
+			var nameProduct = $(this).parent().parent().parent().find('.block2-name').html();
+			$(this).on('click', function(){
+				swal(nameProduct, "is added to cart !", "success");
+			});
+		});
+
+		$('.block2-btn-addwishlist').each(function(){
+			var nameProduct = $(this).parent().parent().parent().find('.block2-name').html();
+			$(this).on('click', function(){
+				swal(nameProduct, "is added to wishlist !", "success");
+			});
+		});
+	</script>
+
+<!--===============================================================================================-->
+	<script src="js/main.js"></script>
 
 </body>
 </html>
-
-
-
